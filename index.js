@@ -113,36 +113,27 @@ objects, like lists. (Gosh, wouldn't it be handy if there were some standard
 that specified how to do this sort of thing? We could call it, say, "JSON" or
 some silly name like that.)
 */
-function serialize(params) {
-    var serialized = {};
-    _.each(params, function (value, key) {
-        if (value === undefined) {
-        }
-        else if (Array.isArray(value)) {
-            // &QualificationRequirement.1.QualificationTypeId=789RVWYBAZW00EXAMPLE
-            // &QualificationRequirement.1.IntegerValue=18
-            // &QualificationRequirement.2.QualificationTypeId=237HSIANVCI00EXAMPLE
-            // &QualificationRequirement.2.IntegerValue=1
-            _.each(value, function (item, index) {
-                _.each(item, function (value, sub_key) {
-                    serialized[(key + "." + index + "." + sub_key)] = value;
-                });
-            });
-        }
-        else if (typeof value == 'object') {
-            // if (value.toJSON) value = value.toJSON();
-            // &BonusAmount.1.Amount=5
-            // &BonusAmount.1.CurrencyCode=USD
-            _.each(value, function (value, sub_key) {
-                serialized[(key + ".1." + sub_key)] = value;
-            });
-        }
-        else {
-            // &Reason=Thanks%20for%20doing%20great%20work!
-            serialized[key] = value;
-        }
-    });
-    return serialized;
+function serialize(params, root) {
+    if (Array.isArray(params)) {
+        // &QualificationRequirement.1.QualificationTypeId=789RVWYBAZW00EXAMPLE
+        // &QualificationRequirement.1.IntegerValue=18
+        // &QualificationRequirement.2.QualificationTypeId=237HSIANVCI00EXAMPLE
+        // &QualificationRequirement.2.IntegerValue=1
+        return _.reduce(params, function(acc, val, ind) {
+            return _.extend(acc, serialize(val, (root ? root + '.' : '') + (ind + 1)));
+        }, {});
+    } else if (typeof params == 'object') {
+        // &BonusAmount.1.Amount=5
+        // &BonusAmount.1.CurrencyCode=USD
+        return _.reduce(params, function(acc, val, ind) {
+            return _.extend(acc, serialize(val, (root ? root + '.' : '') + ind));
+        }, {});
+    } else {
+        // &Reason=Thanks%20for%20doing%20great%20work!
+        var serialized = {};
+        if (root) serialized[root] = params;
+        return serialized;
+    }
 }
 /**
 The AWS documentation calls the sandbox and production sites, variously,
