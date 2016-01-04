@@ -10,6 +10,18 @@ function splitStrings(args) {
     return object;
 }
 exports.splitStrings = splitStrings;
+var xml_char_map = {
+    '<': '&lt;',
+    '>': '&gt;',
+    '&': '&amp;',
+    '"': '&quot;',
+    "'": '&apos;'
+};
+function escapeXML(s) {
+    return s.replace(/[<>&"']/g, function(ch) {
+        return xml_char_map[ch];
+    });
+}
 var APIError = (function () {
     function APIError(code, message) {
         this.code = code;
@@ -40,9 +52,19 @@ var Price = (function () {
 })();
 exports.Price = Price;
 var ExternalQuestion = (function () {
-    function ExternalQuestion(ExternalURL, FrameHeight) {
+    function ExternalQuestion(ExternalURL, FrameHeight, Version) {
         this.ExternalURL = ExternalURL;
         this.FrameHeight = FrameHeight;
+        if (Version) this.Version = Version;
+    }
+    ExternalQuestion.prototype.Version = '2006-07-14';
+    ExternalQuestion.prototype.toXML = function() {
+        return [
+            "<ExternalQuestion xmlns=\"http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/" + this.Version + "/ExternalQuestion.xsd\">",
+            "<ExternalURL>" + escapeXML(this.ExternalURL.toString()) + "</ExternalURL>",
+            "<FrameHeight>" + escapeXML(this.FrameHeight.toString()) + "</FrameHeight>",
+            "</ExternalQuestion>"
+        ].join('');
     }
     return ExternalQuestion;
 })();
@@ -122,7 +144,7 @@ function serialize(params, root) {
         return _.reduce(params, function(acc, val, ind) {
             return _.extend(acc, serialize(val, (root ? root + '.' : '') + (ind + 1)));
         }, {});
-    } else if (typeof params == 'object') {
+    } else if (typeof params == 'object' && !params.toXML) {
         // &BonusAmount.1.Amount=5
         // &BonusAmount.1.CurrencyCode=USD
         return _.reduce(params, function(acc, val, ind) {
@@ -131,7 +153,9 @@ function serialize(params, root) {
     } else {
         // &Reason=Thanks%20for%20doing%20great%20work!
         var serialized = {};
-        if (root) serialized[root] = params;
+        if (root) {
+            serialized[root] = params.toXML && params.toXML() || params;
+        }
         return serialized;
     }
 }
