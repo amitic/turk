@@ -175,7 +175,7 @@ var Account = (function () {
         this.AWSSecretAccessKey = AWSSecretAccessKey;
     }
     Account.prototype.createConnection = function (environment) {
-        if (environment === void 0) { environment = Environment.production; }
+        if (environment === void 0) { environment = 'production'; }
         return new Connection(this, environment);
     };
     return Account;
@@ -190,7 +190,7 @@ var Connection = (function () {
     }
     Object.defineProperty(Connection.prototype, "url", {
         get: function () {
-            return (this.environment == Environment.production) ?
+            return (this.environment == 'production') ?
                 'https://mechanicalturk.amazonaws.com' :
                 'https://mechanicalturk.sandbox.amazonaws.com';
         },
